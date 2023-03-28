@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>时间块分配工具</title>
+	<style>
+		form {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			margin-bottom: 20px;
+		}
+		label {
+			font-size: 20px;
+			margin-right: 10px;
+		}
+		input {
+			padding: 5px;
+			font-size: 16px;
+			border-radius: 5px;
+			border: 1px solid #ccc;
+			margin-bottom: 10px;
+		}
+		button {
+/* 			padding: 10px; */
+			font-size: 16px;
+			border-radius: 5px;
+			background-color: #4CAF50;
+			color: white;
+			border: none;
+			cursor: pointer;
+			margin-bottom: 10px;
+		}
+		table {
+			border-collapse: collapse;
+			width: 100%;
+/* 			margin-bottom: 20px; */
+		}
+		th, td {
+/* 			padding: 10px; */
+			text-align: left;
+			border-bottom: 1px solid #ddd;
+		}
+		th {
+			background-color: #4CAF50;
+			color: white;
+		}
+		#totalTime {
+			font-size: 16px;
+			font-weight: bold;
+			text-align: center;
+		}
+		h1 {
+			text-align: center;
+		}
+		.chart {
+			display: grid;
+			grid-template-columns: repeat(6, 1fr);
+			grid-template-rows: repeat(14, 1fr);
+			align-items: center;
+			margin-bottom: 20px;
+/* overflow-y: auto;
+max-height: 200px; */
+		}
+		.chart-block {
+			height: 30px;
+			margin: 2px;
+			margin-right: 10px;
+			border-radius: 5px;
+			border: 1px dashed #ccc;
+			display: flex;
+			justify-content: center;
+
+		}
+		.chart-block-occupied {
+			background-color: red;
+			margin-right: 5px;
+		}
+		.chart-block-free {
+			background-color: white;
+			margin-right: 5px;
+
+		}
+
+		
+		.modal {
+			display: none;
+			position: fixed;
+			z-index: 1;
+			left: 0;
+			top: 0;
+			width: 100%;
+			height: 100%;
+			overflow: auto;
+			background-color: rgba(0,0,0,0.4);
+		}
+		.modal-content {
+			background-color: #fefefe;
+			margin: 15% auto;
+			padding: 20px;
+			border: 1px solid #888;
+			width: 80%;
+		}
+		.close {
+			color: #aaa;
+			float: right;
+			font-size: 28px;
+			font-weight: bold;
+		}
+		.close:hover,
+		.close:focus {
+			color: black;
+			text-decoration: none;
+			cursor: pointer;
+		}
+
+	</style>
+</head>
+<body>
+	<div style="position: fixed; top: 0; right: 0; display: flex; justify-content: flex-end;background-color: white;width: 100%;border:2px solid gray;padding-top:15px;">
+		
+<button id="saveAsTemplate"  onclick="saveAsTemplate()"> 另存为模板</button>
+		&emsp;		
+<button id="readFromTemplate"  onclick="readFromTemplate()"> 读取模板</button>
+		&emsp;
+		<label for="date">日期：</label>
+		<input type="date" id="date" name="date" onchange="getTaskInfoByDay()">
+		&emsp;
+<button id="myBtn"  onclick="addTaskInfo()"> 添加任务</button>
+		&emsp;
+				<button type="button" onclick="removeAllTasks()">移除所有任务</button>
+		&emsp;
+<button type="button" onclick="importTaskList()">导入任务列表</button>
+		&emsp;
+<button type="button" onclick="exportTaskList()">导出任务列表</button>
+		&emsp;
+<button type="button" onclick="exportTaskListAsPng()">导出任务列表图片</button>
+		&emsp;
+<button id="myBtn"  onclick="showInfo('info-desc')"> 软件介绍</button>
+
+	</div>
+	<br><br><br>
+	<div id="pngFrame">
+	<div class="chart" id="chart"></div>
+		<br>
+	<div id="statInfo" style="display: flex; justify-content: center;">
+		<span id="nowDate" style="font-size: 16px; font-weight: bold;margin-right: 20px;"></span>	
+		<span id="totalTime" style="font-size: 16px; font-weight: bold; margin-right: 20px;"></span>
+		<span id="remainingTime" style="font-size: 16px; font-weight: bold;"></span>	
+	</div>
+		</div>
+	<br>
+	
+	<table id="taskTable" >
+		<tr>
+			<th>序号</th>
+			<th>组别</th>
+			<th>任务</th>
+			<th>时间（分钟）</th>
+			<th>是否计算时间</th>
+			<th>任务权重</th>
+			<th>操作</th>
+		</tr>
+	</table>
+<!-- The Modal -->
+<div id="infoModal" class="modal">
+
+  <!-- Modal content -->
+  <div class="modal-content">
+    <span class="close" onclick="closeInfo();">&times;</span>
+	<div class="info" id="info-desc">
+		
+				<h1>时间块分配工具</h1>
+		<details id="details">
+			<summary>功能介绍</summary>
+			<p>这是一个时间块分配工具，可以帮助你合理安排时间，提高效率。</p>
+			<p>使用方法：</p>
+			<ol>
+				<li>输入组别、任务名称、时间和权重，选择是否计算时间，点击“添加任务”按钮。</li>
+				<li>可以在任务列表中查看已添加的任务，也可以移除某个任务或全部任务。</li>
+				<li>可以查看总时间、剩余时间和使用时间百分比、剩余时间百分比。</li>
+				<li>可以查看时间块图表，了解已用时间和剩余时间的分布情况。</li>
+				<li>已添加的任务可以动态调整是否计算时间。</li>
+				<li>任务列表可以按照任务权重排序。</li>
+				<li>可以导入任务列表，将之前保存的任务列表导入到当前日期。</li>
+				<li>可以导出任务列表，将当前日期的任务列表导出到本地。</li>
+				<li>可以在任务列表中点击“定位”按钮，自动跳转到时间块图表中对应的任务。</li>
+				<li>可以在时间块图表中点击某个时间块，自动跳转到任务列表中对应的任务。</li>
+			</ol>
+		</details>
+	</div>
+			
+			<div  class="info" id="info-template">
+					<select id="templateSelect"   onchange="()">
+  <!-- 这里添加模板选项 -->
+</select>
+<button  onclick="loadTemplate()"> 读取按钮</button>
+			</div>
+	
+		</div>
+</div>
+	
+<!-- The Modal -->
+<div id="taskInfoModal" class="modal">
+
+  <!-- Modal content -->
+  <div class="modal-content">
+    <span class="close" onclick="closeTaskInfo();">&times;</span>
+			
+<table id="addTable">
+		<tr>	<td>
+				<label for="group">组别：</label>
+				<input type="text" id="group" name="group" placeholder="请输入组别">
+			</td>
+			<td>
+				<label for="task">任务：</label>
+				<input type="text" id="task" name="task" placeholder="请输入任务名称">
+			</td>
+			<td>
+				<label for="time">时间（分钟）：</label>
+				<input type="number" id="time" name="time" placeholder="请输入任务时间">
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<label for="isCountTime">是否计算时间：</label>
+				<input type="checkbox" id="isCountTime" name="isCountTime" checked>
+			</td>
+			<td>
+				<label for="weight">任务权重：</label>
+				<input type="number" id="weight" name="weight" placeholder="请输入任务权重">
+			</td>
+			<td>
+				<button type="button" onclick="addTask()">添加任务</button>
+			</td>
+		</tr>
+	</table>
+  </div>
+
+</div>
+
+	<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+	<script>
+	function  addTaskInfo() {
+	var modal = document.getElementById("taskInfoModal");
+	  modal.style.display = "block";
+	}
+
+	
+function closeTaskInfo() {
+	var modal = document.getElementById("taskInfoModal");
+	  modal.style.display = "none";
+	}
+window.onclick = function(event) {
+	var modal = document.getElementById("taskInfoModal");
+	  if (event.target == modal) {
+	    modal.style.display = "none";
+	  }
+
+	
+	var modal = document.getElementById("infoModal");
+	  if (event.target == modal) {
+	    modal.style.display = "none";
+	  }
+	}
+
+
+		
+	function  showInfo(tag) {
+	var modal = document.getElementById("infoModal");
+	  modal.style.display = "block";
+var infoDivs = document.querySelectorAll("#infoModal .info");
+			for (var i = 0; i < infoDivs.length; i++) {
+				infoDivs[i].style.display = "none";
+			}
+			document.getElementById(tag).style.display = "block";
+
+	}
+
+	
+function closeInfo() {
+	var modal = document.getElementById("infoModal");
+	  modal.style.display = "none";
+	}
+		
+		
+		var taskList = [];
+  
+		var budgetTime = 7 * 60;
+
+
+		function addTask() {
+			var group = document.getElementById("group").value;
+			var task = document.getElementById("task").value;
+			var time = document.getElementById("time").value;
+			var isCountTime = document.getElementById("isCountTime").checked;
+			var weight = document.getElementById("weight").value;
+			if (group !== "" && task !== "" && time !== "" && weight !== "") {
+				taskList.push({group: group,task: task, time: time, isCountTime: isCountTime, weight: weight});
+				document.getElementById("taskTable").innerHTML += "<tr><td>" + taskList.length + "</td><td>" + group + "</td><td>" + task + "</td><td>" + time + "</td><td>" + (isCountTime ? "是" : "否") + "</td><td>" + weight + "</td><td><button onclick='removeTaskCal(this)'>切换</button>&emsp;<button onclick='removeTask(this)'>移除</button>&emsp;<button onclick='locateTask(this)'>定位</button></td></tr>";
+				document.getElementById("group").value = "";
+				document.getElementById("task").value = "";
+				document.getElementById("time").value = "";
+				document.getElementById("isCountTime").checked = true;
+				document.getElementById("weight").value = "";
+				calculateTime();
+				drawChart();redrawTableUi();
+			} else {
+				alert("请输入组别、任务名称、时间和权重！");
+			}
+
+			saveTaskList()
+			
+		}
+
+		function saveTaskList(){
+			var date = document.getElementById("date").value;
+			localStorage.setItem(date+"taskList", JSON.stringify(taskList));
+		}
+
+		function changeWeight(input, index) {
+			taskList[index].weight = input.value;
+			sortTaskList();
+			drawChart();redrawTableUi();
+			saveTaskList()
+		}
+
+		function getTaskList(){
+			var date = document.getElementById("date").value;
+			return localStorage.getItem(date+"taskList");
+		}
+
+		function removeTask(btn) {
+			var row = btn.parentNode.parentNode;
+			var index = row.rowIndex - 1;
+			taskList.splice(index, 1);
+			row.remove();
+			calculateTime();
+			drawChart();redrawTableUi();
+			saveTaskList()
+		}
+
+		
+		function removeTaskCal(btn) {
+			var row = btn.parentNode.parentNode;
+			var index = row.rowIndex - 1;
+			taskList[index].isCountTime = !taskList[index].isCountTime;
+			if (taskList[index].isCountTime) {
+				row.cells[3].innerHTML = "是";
+			} else {
+				row.cells[3].innerHTML = "否";
+			}
+			calculateTime();
+			drawChart();redrawTableUi();
+			saveTaskList()
+		}
+
+		function removeAllTasks() {
+			var table = document.getElementById("taskTable");
+			var rows = table.rows;
+			for (var i = 1; i < rows.length; i++) {
+				var row = rows[i];
+				var index = row.rowIndex - 1;
+				taskList.splice(index, 1);
+			}
+			table.innerHTML = "<tr><th>序号</th><th>组别</th><th>任务</th><th>时间（分钟）</th><th>是否计算时间</th><th>任务权重</th><th>操作</th></tr>";
+			calculateTime();
+			drawChart();redrawTableUi();
+			saveTaskList()
+		}
+
+		function calculateTime() {
+document.getElementById("nowDate").innerHTML = "当前日期："+document.getElementById("date").value ;
+
+			if (taskList.length === 0) {
+				document.getElementById("totalTime").innerHTML = "总时间：0小时0分钟";
+				document.getElementById("remainingTime").innerHTML = "剩余时间：7小时0分钟";
+			} else {
+				var totalTime = 0;
+				var countTime = 0;
+				for (var i = 0; i < taskList.length; i++) {
+					if (taskList[i].isCountTime) {
+						totalTime += parseInt(taskList[i].time);
+						countTime += parseInt(taskList[i].time) ;
+					} else {
+						totalTime += parseInt(taskList[i].time);
+					}
+				}
+				document.getElementById("totalTime").innerHTML = "总时间：" + Math.floor(totalTime / 60) + "小时" + totalTime % 60 + "分钟";
+				var remainingTime = budgetTime - countTime;
+				document.getElementById("remainingTime").innerHTML = "剩余时间：" + Math.floor(remainingTime / 60) + "小时" + remainingTime % 60 + "分钟";
+				var usedTimePercentage = Math.floor(countTime / budgetTime * 100);
+				var remainingTimePercentage = 100 - usedTimePercentage;
+				document.getElementById("totalTime").innerHTML += "（使用时间百分比：" + usedTimePercentage + "%）";
+				document.getElementById("remainingTime").innerHTML += "（剩余时间百分比：" + remainingTimePercentage + "%）";
+				sortTaskList();
+			}
+		}
+
+		function sortTaskList() {
+			taskList.sort(function(a, b) {
+				return b.weight - a.weight;
+			});
+			var table = document.getElementById("taskTable");
+			var rows = table.rows;
+			for (var i = 1; i < rows.length; i++) {
+				var row = rows[i];
+				var index = row.rowIndex - 1;
+				row.cells[0].innerHTML = index + 1;
+				row.cells[1].innerHTML = taskList[index].group;
+				row.cells[2].innerHTML = taskList[index].task;
+				row.cells[3].innerHTML = taskList[index].time;
+				row.cells[4].innerHTML = taskList[index].isCountTime ? "是" : "否";
+				row.cells[5].innerHTML = taskList[index].weight;
+			}
+		
+		}
+		
+			function getRandomColor() {
+				var letters = '89ABCDEF';
+				var color = '#';
+				for (var i = 0; i < 6; i++) {
+					color += letters[Math.floor(Math.random() * 8)];
+				}
+				return color;
+			}
+
+		function drawChart() {
+			var chart = document.getElementById("chart");
+			chart.innerHTML = "";
+			var totalTime = 0;
+			var totalWeight = 0;
+			for (var i = 0; i < taskList.length; i++) {
+				if (taskList[i].isCountTime) {
+					totalTime += parseInt(taskList[i].time);
+					totalWeight += parseInt(taskList[i].weight);
+				}
+			}
+
+			var remainingTime = budgetTime - totalTime;
+			var budgetTimeBlock = Math.ceil(budgetTime / 5);
+			var totalBlock = Math.ceil(totalTime / 5);
+			var remainingBlock = budgetTimeBlock - totalBlock;
+			var blockIndex = 1;
+			
+			var taskNames = [];
+			var taskTimes = [];
+			var taskWeights = [];
+			for (var i = 0; i < taskList.length; i++) {
+				if (taskList[i].isCountTime) {
+					taskNames.push(taskList[i].task);
+					taskTimes.push(parseInt(taskList[i].time));
+					taskWeights.push(parseInt(taskList[i].weight));
+				}
+			}
+			for (var i = 0; i < taskNames.length; i++) {
+				var taskTimeBlock = Math.ceil(taskTimes[i] / 5);
+				var taskColor = getRandomColor();
+				for (var j = 0; j < taskTimeBlock; j++) {
+					var block = document.createElement("div");
+					block.classList.add("chart-block");
+					block.classList.add("chart-block-occupied");
+					block.setAttribute("data-task-name", taskNames[i]);
+
+					if (j === 0) {
+						block.innerHTML = blockIndex +":"+ taskNames[i] ;
+					}else{
+						block.innerHTML = blockIndex  ;
+					}
+					block.style.backgroundColor = taskColor;
+					block.onclick = function() {
+						var taskName = this.getAttribute("data-task-name");
+						var row = document.getElementById("taskTable").querySelectorAll("tr td:nth-child(3):not(:first-child)");
+						for (var i = 0; i < row.length; i++) {
+							if (row[i].innerHTML === taskName) {
+								row[i].parentNode.style.backgroundColor = "yellow";
+									var table = document.getElementById("taskTable");
+									var rows = table.rows;
+									for (var i = 1; i < rows.length; i++) {
+										var row = rows[i];
+										var index = row.rowIndex - 1;
+										if (row.cells[2].innerHTML === taskName) {
+											row.style.backgroundColor = "yellow";
+											setTimeout(function(){
+												row.style.backgroundColor = "";
+											}, 1200);
+											window.scrollTo(0, row.offsetTop);
+											window.scrollBy(0, 150);
+											break;
+										}
+									}
+
+								break;
+							}
+						}
+					};
+					chart.appendChild(block);
+				blockIndex++;
+				}
+			}
+
+			
+			for (var i = 0; i < remainingBlock; i++) {
+				var block = document.createElement("div");
+				block.classList.add("chart-block");
+				block.classList.add("chart-block-free");
+				block.innerHTML = blockIndex;
+				chart.appendChild(block);
+				blockIndex++;
+			}		
+			saveTaskList()
+		}
+
+			function redrawTableUi(){
+			var rows = document.getElementById("taskTable").rows;
+				
+			for (var i = 1; i < rows.length; i++) {
+							var row = rows[i];
+							var index = row.rowIndex - 1;
+							row.cells[5].innerHTML = "<input type='number' value='" + taskList[index].weight + "' onchange='changeWeight(this," + index + ")'>";
+						}
+			}
+
+		function getTaskInfoByDay(){			
+					document.getElementById("taskTable").innerHTML = "<tr><th>序号</th><th>组别</th><th>任务</th><th>时间（分钟）</th><th>是否计算时间</th><th>任务权重</th><th>操作</th></tr>";	
+			if (getTaskList()!=null && getTaskList().length>0) {
+					taskList = JSON.parse(getTaskList());
+			
+					for (var i = 0; i < taskList.length; i++) {
+						document.getElementById("taskTable").innerHTML += "<tr><td>" + (i+1) + "</td><td>" + taskList[i].group + "</td><td>" + taskList[i].task + "</td><td>" + taskList[i].time + "</td><td>" + (taskList[i].isCountTime ? "是" : "否") + "</td><td>" + taskList[i].weight + "</td><td><button onclick='removeTaskCal(this)'>切换</button>&emsp;<button onclick='removeTask(this)'>移除</button>&emsp;<button onclick='locateTask(this)'>定位</button></td></tr>";
+					}
+					calculateTime();
+					drawChart();redrawTableUi();
+					
+				} else {
+					taskList = [];
+					calculateTime();
+					drawChart();redrawTableUi();
+					
+						document.getElementById("totalTime").innerHTML = "总时间：0小时0分钟";
+		    document.getElementById("remainingTime").innerHTML = "剩余时间：7小时0分钟";
+		    var templates = JSON.parse(localStorage.getItem("templates")) || [];
+		    if (templates.length > 0) {
+		        var confirmLoad = confirm("是否从模板中读取任务？");
+		        if (confirmLoad) {
+		            readFromTemplate();
+		            calculateTime();
+		            drawChart();
+		            redrawTableUi();
+		        }
+		    }
+				}
+	
+		}
+
+		
+		window.onload = function() {
+			var today = new Date();
+var date = today.getFullYear() + '-' + (today.getMonth()+1).toString().padStart(2, "0") + '-' + today.getDate().toString().padStart(2, "0");
+var datePicker = document.getElementById("date");
+	datePicker.value = date;
+var event = new Event('change');
+datePicker.dispatchEvent(event);
+							getTaskInfoByDay();			
+		}
+		function locateTask(btn) {
+			var row = btn.parentNode.parentNode;
+			var index = row.rowIndex - 1;
+			var taskTime = parseInt(taskList[index].time);
+			var taskName = taskList[index].task;
+			var chartBlocks = document.getElementsByClassName("chart-block-occupied");
+			var blockIndex = 1;
+			for (var i = 0; i < chartBlocks.length; i++) {
+				if (chartBlocks[i].innerHTML.indexOf(taskName) !== -1) {
+					blockIndex = i + 1;
+					break;
+				} else {
+					blockIndex += parseInt(chartBlocks[i].innerHTML.split(":")[0]);
+				}
+			}
+			// alert("任务 " + taskName + " 在图表中的位置为 " + blockIndex + " 至 " + (blockIndex + Math.ceil(taskTime / 5) - 1) + "。");
+			// alert("任务 " + taskName + " 在图表中的位置为 " + blockIndex + " 至 " + (blockIndex + Math.ceil(taskTime / 5) - 1) + "。");
+			var chart = document.getElementById("chart");
+			var chartBlocks = chart.getElementsByClassName("chart-block");
+			for (var i = 0; i < chartBlocks.length; i++) {
+				if (i >= blockIndex - 1 && i < blockIndex + Math.ceil(taskTime / 5) - 1) {
+					chartBlocks[i].style.backgroundColor = "yellow";
+					if(i==blockIndex - 1){
+						
+				 chartBlocks[i].scrollIntoView();
+					window.scrollBy(0, -150);
+
+					}
+				} else {
+					chartBlocks[i].style.backgroundColor = chartBlocks[i].classList.contains("chart-block-occupied") ? "red" : "white";
+				}
+			}
+
+			setTimeout(function(){
+				drawChart();
+			}, 1200);
+
+		}
+
+			function importTaskList(){
+			var input = document.createElement("input");
+			input.type = "file";
+			input.accept = ".json";
+			input.onchange = function(){
+				var file = input.files[0];
+				var reader = new FileReader();
+				reader.readAsText(file);
+				reader.onload = function(){
+					var data = JSON.parse(reader.result);
+				//	localStorage.setItem(data.date+"taskList", JSON.stringify(data.taskList));
+					localStorage.setItem(document.getElementById("date").value+"taskList", JSON.stringify(data.taskList));
+					getTaskInfoByDay();
+				};
+			};
+			input.click();
+		}
+
+		function exportTaskList(){
+			var date = document.getElementById("date").value;
+			var taskList = JSON.parse(localStorage.getItem(date+"taskList"));
+			var data = {
+				date: date,
+				taskList: taskList
+			};
+			var a = document.createElement("a");
+			a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
+			a.download = date + "taskList.json";
+			a.click();
+		}
+
+function saveAsTemplate(){
+	var templateName = prompt("请输入模板名称：");
+	if (templateName !== null && templateName !== "") {
+		var templates = JSON.parse(localStorage.getItem("templates")) || [];
+		var date = document.getElementById("date").value;
+		var taskList = JSON.parse(localStorage.getItem(date+"taskList"));
+		var template = {name: templateName, taskList: taskList};
+		var isDuplicate = false;
+		for (var i = 0; i < templates.length; i++) {
+			if (templates[i].name === templateName) {
+				isDuplicate = true;
+				break;
+			}
+		}
+		if (isDuplicate) {
+			alert("模板名称重复，请重新输入！");
+		} else {
+			templates.push(template);
+			localStorage.setItem("templates", JSON.stringify(templates));
+			alert("模板保存成功！");
+		}
+	}
+
+}
+
+
+function readFromTemplate(){
+	var templates = JSON.parse(localStorage.getItem("templates")) || [];
+	var select = document.getElementById("templateSelect");
+	select.innerHTML = "";
+	for (var i = 0; i < templates.length; i++) {
+		var option = document.createElement("option");
+		option.value = templates[i].name;
+		option.innerHTML = templates[i].name;
+		select.appendChild(option);
+	}
+	showInfo("info-template");
+}
+
+function loadTemplate(){
+	var templates = JSON.parse(localStorage.getItem("templates")) || [];
+	var select = document.getElementById("templateSelect");
+	var templateName = select.value;
+	for (var i = 0; i < templates.length; i++) {
+		if (templates[i].name === templateName) {
+			localStorage.setItem(document.getElementById("date").value+"taskList", JSON.stringify(templates[i].taskList));
+			getTaskInfoByDay();
+			break;
+		}
+	}
+	closeInfo();
+}
+
+function exportTaskListAsPng(){
+			html2canvas(document.getElementById("pngFrame")).then(function(canvas) {
+				var link = document.createElement("a");
+				link.download = document.getElementById("date").value + "-chart.png";
+				link.href = canvas.toDataURL("image/png");
+				link.click();
+			});
+
+}
+	</script>
+	
+	</body>
+</html>
