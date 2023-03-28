@@ -7,6 +7,9 @@ Time Block Allocation Tool
 
 This is a time block allocation tool that can help you arrange your time reasonably and improve efficiency.
 
+![截图1](chart-pic.png)
+![截图2](table-pic.png)
+
 
 ## Installation
 
