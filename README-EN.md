@@ -1,4 +1,4 @@
-
+[简体中文](README.md)
 # Title
 
 Time Block Allocation Tool
