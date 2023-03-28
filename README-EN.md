@@ -30,6 +30,10 @@ Single-page file, no installation required.
 - You can export the task list and export the task list of the current date to the local.
 - You can click the "Locate" button in the task list to automatically jump to the corresponding task in the time block chart.
 - You can click on a time block in the time block chart to automatically jump to the corresponding task in the task list.
+- You can be saved as a template to save the task list for the current date.
+- You can read the template to read the previously saved template to the current date.
+- You can export the task list picture to export the current date task list as a picture.
+- You can view software introduction to learn more about usage.
 
 
 ## Contribution
